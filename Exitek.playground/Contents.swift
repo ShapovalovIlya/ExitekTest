@@ -1,5 +1,33 @@
 import Foundation
+import XCTest
 
+//MARK: - Test module
+class PlaygroundTestObserver : NSObject, XCTestObservation {
+    @objc private func testCase(testCase: XCTestCase, didFailWithDescription description: String, inFile filePath: String?, atLine lineNumber: UInt) {
+        print("Test failed on line \(lineNumber): \(testCase.name), \(description)")
+    }
+}
+
+let observer = PlaygroundTestObserver()
+let center = XCTestObservationCenter.shared
+center.addTestObserver(observer)
+
+struct TestRunner {
+    public init() {}
+    
+    func runTests(testClass: AnyClass) {
+        print("Running test suite \(testClass)")
+
+        let tests = testClass as! XCTestCase.Type
+        let testSuite = tests.defaultTestSuite
+        testSuite.run()
+        let run = testSuite.testRun as! XCTestSuiteRun
+
+        print("Ran \(run.executionCount) tests in \(run.testDuration)s with \(run.totalFailureCount) failures")
+    }
+}
+
+//MARK: - Test task
 // Implement mobile phone storage protocol
 // Requirements:
 // - Mobiles must be unique (IMEI is an unique number)
@@ -18,7 +46,8 @@ struct Mobile: Hashable {
     let model: String
 }
 
-class MobileController: MobileStorage {
+//MARK: - Mobile Controller class
+final class MobileController: MobileStorage {
     
     var mobileStorage: Set<Mobile> = []
     
@@ -26,11 +55,12 @@ class MobileController: MobileStorage {
         case alreadyExists
         case notFound
     }
-    
+    // .getAll() method start
     func getAll() -> Set<Mobile> {
         return mobileStorage
     }
     
+    // .fundByImei() method start
     func findByImei(_ imei: String) -> Mobile? {
         
         for mobile in mobileStorage {
@@ -41,7 +71,7 @@ class MobileController: MobileStorage {
             }
         }
         return nil
-    }
+    } // .getAll() method end
     
     func save(_ mobile: Mobile) throws -> Mobile {
         // Chek storage for duplicate
@@ -53,7 +83,7 @@ class MobileController: MobileStorage {
             mobileStorage.insert(mobile)
             return mobile
         }
-    }
+    } // .save() method end
     
     func delete(_ product: Mobile) throws {
         // Chek product to exist in storage
@@ -64,66 +94,37 @@ class MobileController: MobileStorage {
             // If storage containts product, remove it
             mobileStorage.remove(product)
         }
-    }
+    } // .delete() method end
     
     func exists(_ product: Mobile) -> Bool {
         if mobileStorage.contains(product){
             return true
         }
         return false
+    } // .exist() method end
+    
+} // MobileController class end
+
+//MARK: - Mobile controller test class
+class MobileControllerTests: XCTestCase {
+    var controller: MobileController!
+    
+    override func setUp() async throws {
+        let mobile = Mobile(imei: "Baz", model: "Bar")
+        controller = MobileController()
+        controller.mobileStorage.insert(mobile)
     }
+    
+    override func tearDown() async throws {
+        controller = nil
+    }
+    
+    
     
 }
 
-let mobileExample = MobileController()
-
-let mobileOne = Mobile(imei: "someImei1", model: "iPhone5")
-let mobileTwo = Mobile(imei: "someImei2", model: "iPhone6")
-let mobileThree = Mobile(imei: "someImei3", model: "iPhone 7")
-
-// Saving new entity
-do {
-    try mobileExample.save(mobileOne)
-    let mobileTwoSaved = try mobileExample.save(mobileTwo)
-    try mobileExample.save(mobileThree)
-    // Check .save() method output
-    print(mobileTwoSaved)
-} catch {
-    print(error)
-}
-
-// Check .exists() method output
-let mobileOneExists = mobileExample.exists(mobileOne)
-print(mobileOneExists)
-
-// Check .save() method for duplicate error
-let mobileOneCopy = mobileOne
-
-do {
-    try mobileExample.save(mobileOneCopy)
-} catch {
-    print(error)
-}
-
-// Check .findByImei() method
-let mobileThreeImei = mobileThree.imei
-
-if let mobileFoundByImei = mobileExample.findByImei(mobileThreeImei) {
-    print(mobileFoundByImei)
-} else {
-    print(".findByImei() does not work!")
-}
-
-//let someMobileImei = "1234564"
-//let finderError = mobileExample.findByImei(someMobileImei)
-//print(finderError)
-
-// Check .getAll() method
-let anotherMobileStorage = mobileExample.getAll()
-print(anotherMobileStorage)
-
-
-
+// Start testing
+TestRunner().runTests(testClass: MobileControllerTests.self)
 
 
 
