@@ -46,15 +46,16 @@ struct Mobile: Hashable {
     let model: String
 }
 
+enum MobileError: Error {
+    case alreadyExists
+    case notFound
+}
+
 //MARK: - Mobile Controller class
 final class MobileController: MobileStorage {
     
     var mobileStorage: Set<Mobile> = []
     
-    enum MobileError: Error {
-        case alreadyExists
-        case notFound
-    }
     // .getAll() method start
     func getAll() -> Set<Mobile> {
         return mobileStorage
@@ -85,7 +86,7 @@ final class MobileController: MobileStorage {
     
     func delete(_ product: Mobile) throws {
         // Chek product to exist in storage
-        if mobileStorage.contains(product) {
+        if !mobileStorage.contains(product) {
             // If product is new throw error
             throw MobileError.notFound
         } else {
@@ -141,23 +142,46 @@ class MobileControllerTests: XCTestCase {
         
         // then
         XCTAssertEqual(controller.findByImei(imei), successGuess)
-        XCTAssertEqual(controller.findByImei(wrongImei), nil)
+        XCTAssertNil(controller.findByImei(wrongImei))
         
         XCTAssertNotEqual(controller.findByImei(imei), failureGuess)
-        XCTAssertNotEqual(controller.findByImei(imei), nil)
+        XCTAssertNotNil(controller.findByImei(imei))
     }
     
     func testSaveMobile() throws {
         // given
         let mobileNew = Mobile(imei: "Foo", model: "Bar")
-        let mobileDuplicate = Mobile(imei: "Baz", model: "Bar")
+        let anotherNewMobile = Mobile(imei: "Bar", model: "Baz")
         
         //then
-        xctassertth
+        XCTAssertEqual(try controller.save(mobileNew), mobileNew)
+        XCTAssertNoThrow(try controller.save(anotherNewMobile))
+        XCTAssertThrowsError(try controller.save(mobileNew)) { error in
+            XCTAssertEqual(error as! MobileError, MobileError.alreadyExists)
+        }
         
     }
     
-}
+    func testDeleteMobile() throws {
+        
+        XCTAssertNoThrow(try controller.delete(mobile))
+        XCTAssertThrowsError(try controller.delete(mobile)) { error in
+            XCTAssertEqual(error as! MobileError, MobileError.notFound)
+        }
+        
+    }
+    
+    func testExistance() {
+        // given
+        guard let existingMobile = mobile else { return print("there is no value in testExistance!")}
+        let notExistingMobile = Mobile(imei: "Foo", model: "Baz")
+        
+        // then
+        XCTAssertTrue(controller.exists(existingMobile))
+        XCTAssertFalse(controller.exists(notExistingMobile))
+    }
+    
+} // end test class
 
 // Start testing
 TestRunner().runTests(testClass: MobileControllerTests.self)
