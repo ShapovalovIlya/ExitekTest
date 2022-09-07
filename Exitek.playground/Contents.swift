@@ -66,8 +66,6 @@ final class MobileController: MobileStorage {
         for mobile in mobileStorage {
             if mobile.imei == imei {
                 return mobile
-            } else {
-                return nil
             }
         }
         return nil
@@ -107,19 +105,57 @@ final class MobileController: MobileStorage {
 
 //MARK: - Mobile controller test class
 class MobileControllerTests: XCTestCase {
+    
     var controller: MobileController!
+    var mobile: Mobile!
     
     override func setUp() async throws {
-        let mobile = Mobile(imei: "Baz", model: "Bar")
+        try await super.setUp()
+        mobile = Mobile(imei: "Baz", model: "Bar")
         controller = MobileController()
         controller.mobileStorage.insert(mobile)
     }
     
     override func tearDown() async throws {
         controller = nil
+        mobile = nil
+        try await super.tearDown()
     }
     
+    func testGetAllMobileItems() {
+        // given
+        let successGuess: Set =  [Mobile(imei: "Baz", model: "Bar")]
+        let failureGuess: Set = [Mobile(imei: "Bar", model: "Foo")]
+        
+        // then
+        XCTAssertEqual(controller.getAll(), successGuess)
+        XCTAssertNotEqual(controller.getAll(), failureGuess)
+    }
     
+    func testFindByImei() {
+        // given
+        let imei = "Baz"
+        let wrongImei = "Bar"
+        let successGuess = Mobile(imei: "Baz", model: "Bar")
+        let failureGuess = Mobile(imei: "Foo", model: "Bar")
+        
+        // then
+        XCTAssertEqual(controller.findByImei(imei), successGuess)
+        XCTAssertEqual(controller.findByImei(wrongImei), nil)
+        
+        XCTAssertNotEqual(controller.findByImei(imei), failureGuess)
+        XCTAssertNotEqual(controller.findByImei(imei), nil)
+    }
+    
+    func testSaveMobile() throws {
+        // given
+        let mobileNew = Mobile(imei: "Foo", model: "Bar")
+        let mobileDuplicate = Mobile(imei: "Baz", model: "Bar")
+        
+        //then
+        xctassertth
+        
+    }
     
 }
 
